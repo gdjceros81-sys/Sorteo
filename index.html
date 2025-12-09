@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo Final - Modal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+
+        /* --- ESTILOS DEL MODAL (GANADOR) --- */
+        #modal-ganador {
+            display: none; /* Oculto por defecto */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.9); /* Fondo negro casi opaco */
+            z-index: 9999; /* Encima de todo */
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            backdrop-filter: blur(8px);
+        }
+
+        .tarjeta-gigante {
+            background: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(40, 167, 69, 0.8), 0 0 100px rgba(255, 215, 0, 0.5);
+            border: 5px solid #FFD700; /* Borde dorado */
+            animation: entrada-triunfal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            max-width: 90%;
+        }
+
+        .texto-ganador {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #28a745;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .titulo-ganador {
+            font-size: 1.5rem;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        @keyframes entrada-triunfal {
+            from { transform: scale(0) rotate(-10deg); opacity: 0; }
+            to { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .container {
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(15px); 
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            z-index: 1;
+        }
+
+        h1 { color: #1a1a1a; margin-top: 0; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        #nuevoNombre { flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #ddd; font-size: 16px; }
+        #btnAgregar { background-color: #28a745; color: white; border: none; border-radius: 8px; padding: 0 20px; font-weight: bold; cursor: pointer; }
+
+        #gridTarjetas {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            min-height: 150px;
+        }
+
+        .tarjeta {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 500;
+            min-height: 70px;
+            border: 3px solid transparent;
+            transition: transform 0.2s;
+            cursor: default;
+            word-break: break-word;
+        }
+
+        .btn-eliminar {
+            position: absolute; top: -8px; right: -8px; background: #ff4d4d; color: white;
+            border-radius: 50%; width: 24px; height: 24px; font-size: 14px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            opacity: 0; transition: opacity 0.2s; border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .tarjeta:hover .btn-eliminar { opacity: 1; }
+        .tarjeta:hover { transform: translateY(-3px); }
+
+        .tarjeta.activo {
+            background-color: #6f42c1; color: white; border-color: #a881ea;
+            transform: scale(1.1); box-shadow: 0 0 20px rgba(111, 66, 193, 0.7); z-index: 10;
+        }
+
+        .controles { display: flex; gap: 15px; margin-top: auto; }
+        button.principal {
+            width: 100%; padding: 15px; font-size: 18px; border: none; border-radius: 10px;
+            cursor: pointer; font-weight: bold; background: linear-gradient(135deg, #6f42c1 0%, #8e44ad 100%);
+            color: white; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: transform 0.2s;
+        }
+        button.principal:disabled { background: #ccc; cursor: not-allowed; }
+        button.secundario {
+            background: #fff; border: 2px solid #ddd; color: #333; padding: 10px 20px;
+            border-radius: 10px; cursor: pointer; font-weight: bold;
+        }
+        #mensaje { min-height: 25px; margin: 10px 0; font-weight: bold; color: #333; font-size: 1.2em;}
+    </style>
+</head>
+<body>
+
+<div id="modal-ganador">
+    <div class="tarjeta-gigante">
+        <div class="titulo-ganador">🏆 El ganador es 🏆</div>
+        <div class="texto-ganador" id="nombre-ganador-grande">NOMBRE AQUÍ</div>
+        <div style="font-size: 3rem;">🎉✨🎈</div>
+    </div>
+</div>
+
+<div class="container">
+    <h1>🎲 Sorteo Oficial</h1>
+    
+    <div class="input-group">
+        <input type="text" id="nuevoNombre" placeholder="Nombre..." onkeypress="handleEnter(event)">
+        <button id="btnAgregar" onclick="agregarNombre()">Agregar +</button>
+    </div>
+
+    <div id="mensaje"></div>
+    <div id="gridTarjetas"></div>
+
+    <div class="controles">
+        <button id="btnReiniciar" class="secundario" onclick="restaurarOriginales()">↻ Reset</button>
+        <button id="btnSortear" class="principal" onclick="comenzarSorteo()">¡Pulsa para sortear!</button>
+    </div>
+</div>
+
+<script>
+    const listaOriginal = [
+        "Luis Enrique Vélez Ocha", "Rocío Liliana Sánchez Reyes", "Jahiro René Castro Almeida",
+        "Rigoberto Antonio Lozano Ruvalcaba", "Carlos Alberto Vázquez Llamas",
+        "Juan Manuel Madrigal Ríos", "Gabriela Ramírez Quintero", "Carlos Alberto Rosas Moreno"
+    ];
+    let participantes = [...listaOriginal];
+    let sorteando = false;
+
+    window.onload = function() { renderizarTarjetas(); };
+
+    function renderizarTarjetas() {
+        const grid = document.getElementById('gridTarjetas');
+        grid.innerHTML = ''; 
+        participantes.forEach((nombre, index) => {
+            const card = document.createElement('div');
+            card.className = 'tarjeta';
+            const textoSpan = document.createElement('span');
+            textoSpan.innerText = nombre;
+            card.appendChild(textoSpan);
+            const btnX = document.createElement('div');
+            btnX.className = 'btn-eliminar'; btnX.innerText = '✕';
+            btnX.onclick = (e) => { e.stopPropagation(); eliminarManual(index); };
+            card.appendChild(btnX);
+            grid.appendChild(card);
+        });
+        actualizarEstadoBotones();
+    }
+
+    function agregarNombre() {
+        const input = document.getElementById('nuevoNombre');
+        const nombre = input.value.trim();
+        if (nombre) { participantes.push(nombre); input.value = ''; renderizarTarjetas(); }
+    }
+    function handleEnter(e) { if(e.key === 'Enter') agregarNombre(); }
+    function eliminarManual(index) {
+        if(sorteando) return; 
+        if(confirm(`¿Borrar a "${participantes[index]}"?`)) {
+            participantes.splice(index, 1); renderizarTarjetas();
+        }
+    }
+    function barajarArray() { participantes.sort(() => Math.random() - 0.5); }
+    function restaurarOriginales() {
+        if(confirm("¿Volver a la lista original?")) { participantes = [...listaOriginal]; renderizarTarjetas(); document.getElementById('mensaje').innerText = ""; }
+    }
+    function actualizarEstadoBotones() {
+        const btn = document.getElementById('btnSortear');
+        if(participantes.length < 2) { btn.disabled = true; btn.innerText = "Faltan participantes"; }
+        else { btn.disabled = false; btn.innerText = "¡Pulsa para sortear!"; }
+    }
+
+    // --- LÓGICA DE SORTEO ---
+    function comenzarSorteo() {
+        if (participantes.length < 2) { alert("Necesitas al menos 2 participantes."); return; }
+        sorteando = true;
+        toggleControles(true); 
+        document.querySelectorAll('.btn-eliminar').forEach(b => b.style.display = 'none');
+        document.getElementById('mensaje').innerText = "🎲 ¡Buscando ganador...";
+
+        const indiceGanador = Math.floor(Math.random() * participantes.length);
+        const tiempoTotal = 10000; const velocidad = 150; const tiempoInicio = Date.now();
+        let indiceVisualActual = -1; let tarjetasDOM = document.querySelectorAll('.tarjeta');
+
+        const intervalo = setInterval(() => {
+            if (indiceVisualActual !== -1) tarjetasDOM[indiceVisualActual].classList.remove('activo');
+            if (Date.now() - tiempoInicio > tiempoTotal) {
+                clearInterval(intervalo);
+                tarjetasDOM[indiceGanador].classList.add('activo');
+                // Llama a la nueva función de modal
+                mostrarGanadorModal(participantes[indiceGanador], indiceGanador);
+            } else {
+                let indiceRandom;
+                do { indiceRandom = Math.floor(Math.random() * participantes.length); }
+                while (indiceRandom === indiceVisualActual && participantes.length > 1);
+                indiceVisualActual = indiceRandom;
+                tarjetasDOM[indiceVisualActual].classList.add('activo');
+            }
+        }, velocidad);
+    }
+
+    // --- FUNCIÓN MODAL CORREGIDA ---
+    function mostrarGanadorModal(nombreGanador, indexGanador) {
+        const modal = document.getElementById('modal-ganador');
+        const nombreGrande = document.getElementById('nombre-ganador-grande');
+        
+        // 1. Poner datos en el modal
+        nombreGrande.innerText = nombreGanador;
+        
+        // 2. Mostrar modal (Display Flex)
+        modal.style.display = 'flex';
+
+        // 3. Esperar 4 segundos
+        setTimeout(() => {
+            // Ocultar modal
+            modal.style.display = 'none';
+            
+            // Lógica de limpieza
+            participantes.splice(indexGanador, 1);
+            barajarArray();
+            renderizarTarjetas();
+            
+            sorteando = false;
+            toggleControles(false);
+            document.getElementById('mensaje').innerText = `Ganador anterior: ${nombreGanador}`;
+        }, 4000);
+    }
+
+    function toggleControles(desactivar) {
+        document.getElementById('btnSortear').disabled = desactivar;
+        document.getElementById('btnReiniciar').disabled = desactivar;
+        document.getElementById('nuevoNombre').disabled = desactivar;
+    }
+</script>
+
+</body>
+</html>
