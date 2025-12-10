@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sorteo Final - Modal</title>
+    <title>Sorteo ATD Oculto</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -30,14 +29,14 @@
             z-index: -1;
         }
 
-        /* --- ESTILOS DEL MODAL (GANADOR) --- */
+        /* --- MODAL GANADOR --- */
         #modal-ganador {
-            display: none; /* Oculto por defecto */
+            display: none;
             position: fixed;
             top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.9); /* Fondo negro casi opaco */
-            z-index: 9999; /* Encima de todo */
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
             justify-content: center;
             align-items: center;
             flex-direction: column;
@@ -50,26 +49,13 @@
             border-radius: 20px;
             text-align: center;
             box-shadow: 0 0 50px rgba(40, 167, 69, 0.8), 0 0 100px rgba(255, 215, 0, 0.5);
-            border: 5px solid #FFD700; /* Borde dorado */
+            border: 5px solid #FFD700;
             animation: entrada-triunfal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             max-width: 90%;
         }
 
-        .texto-ganador {
-            font-size: 3rem;
-            font-weight: 800;
-            color: #28a745;
-            margin-bottom: 10px;
-            display: block;
-        }
-        
-        .titulo-ganador {
-            font-size: 1.5rem;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-        }
+        .texto-ganador { font-size: 3rem; font-weight: 800; color: #28a745; margin-bottom: 10px; display: block; }
+        .titulo-ganador { font-size: 1.5rem; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; }
 
         @keyframes entrada-triunfal {
             from { transform: scale(0) rotate(-10deg); opacity: 0; }
@@ -103,39 +89,84 @@
             gap: 15px;
             margin-bottom: 20px;
             min-height: 150px;
+            perspective: 1000px; /* Necesario para el efecto 3D */
         }
 
-        .tarjeta {
-            background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* --- ESTILOS DE TARJETA 3D --- */
+        .tarjeta-container {
+            background-color: transparent;
+            min-height: 80px;
+            perspective: 1000px;
+            cursor: default;
+        }
+
+        .tarjeta-inner {
             position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        /* Clase para voltear la carta */
+        .tarjeta-container.flipped .tarjeta-inner {
+            transform: rotateY(180deg);
+        }
+
+        /* Caras de la tarjeta */
+        .cara-frente, .cara-atras {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
+            padding: 10px;
+            box-sizing: border-box;
             font-weight: 500;
-            min-height: 70px;
-            border: 3px solid transparent;
-            transition: transform 0.2s;
-            cursor: default;
-            word-break: break-word;
         }
 
+        .cara-frente {
+            background-color: white;
+            color: black;
+            border: 3px solid transparent; /* Reserva espacio para borde */
+        }
+
+        .cara-atras {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            transform: rotateY(180deg);
+            font-size: 2rem;
+            font-weight: bold;
+            border: 3px solid #fff;
+        }
+
+        /* Botón de eliminar (X) */
         .btn-eliminar {
             position: absolute; top: -8px; right: -8px; background: #ff4d4d; color: white;
             border-radius: 50%; width: 24px; height: 24px; font-size: 14px;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             opacity: 0; transition: opacity 0.2s; border: 2px solid white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 10;
         }
-        .tarjeta:hover .btn-eliminar { opacity: 1; }
-        .tarjeta:hover { transform: translateY(-3px); }
+        .tarjeta-container:hover .btn-eliminar { opacity: 1; }
+        
+        /* Ocultar la X cuando la carta está volteada para no borrar a ciegas */
+        .tarjeta-container.flipped .btn-eliminar { display: none !important; }
 
-        .tarjeta.activo {
-            background-color: #6f42c1; color: white; border-color: #a881ea;
-            transform: scale(1.1); box-shadow: 0 0 20px rgba(111, 66, 193, 0.7); z-index: 10;
+        /* --- ESTILOS DE SELECCIÓN (LUZ) --- */
+        /* Aplicamos el borde iluminado al container o al inner según corresponda */
+        .tarjeta-container.activo .cara-atras {
+            border-color: #f1c40f; /* Amarillo brillante */
+            box-shadow: 0 0 25px rgba(241, 196, 15, 0.8);
+            transform: rotateY(180deg) scale(1.05);
         }
 
         .controles { display: flex; gap: 15px; margin-top: auto; }
@@ -163,7 +194,7 @@
 </div>
 
 <div class="container">
-    <h1>🎲 Sorteo Oficial</h1>
+    <h1>🎲 Sorteo ATD</h1>
     
     <div class="input-group">
         <input type="text" id="nuevoNombre" placeholder="Nombre..." onkeypress="handleEnter(event)">
@@ -175,7 +206,7 @@
 
     <div class="controles">
         <button id="btnReiniciar" class="secundario" onclick="restaurarOriginales()">↻ Reset</button>
-        <button id="btnSortear" class="principal" onclick="comenzarSorteo()">¡Pulsa para sortear!</button>
+        <button id="btnSortear" class="principal" onclick="prepararSorteo()">¡Pulsa para sortear!</button>
     </div>
 </div>
 
@@ -190,20 +221,39 @@
 
     window.onload = function() { renderizarTarjetas(); };
 
-    function renderizarTarjetas() {
+    // Renderizar ahora soporta el estado "flipped" (volteado)
+    function renderizarTarjetas(estanVolteadas = false) {
         const grid = document.getElementById('gridTarjetas');
         grid.innerHTML = ''; 
         participantes.forEach((nombre, index) => {
-            const card = document.createElement('div');
-            card.className = 'tarjeta';
-            const textoSpan = document.createElement('span');
-            textoSpan.innerText = nombre;
-            card.appendChild(textoSpan);
+            // Estructura 3D
+            const container = document.createElement('div');
+            container.className = 'tarjeta-container' + (estanVolteadas ? ' flipped' : '');
+            container.id = `card-container-${index}`;
+
+            const inner = document.createElement('div');
+            inner.className = 'tarjeta-inner';
+
+            // Cara Frente (Nombre)
+            const frente = document.createElement('div');
+            frente.className = 'cara-frente';
+            frente.innerText = nombre;
+
+            // Cara Atras (Interrogación)
+            const atras = document.createElement('div');
+            atras.className = 'cara-atras';
+            atras.innerText = "?";
+
+            // Botón eliminar (Solo visible en el frente por CSS)
             const btnX = document.createElement('div');
             btnX.className = 'btn-eliminar'; btnX.innerText = '✕';
             btnX.onclick = (e) => { e.stopPropagation(); eliminarManual(index); };
-            card.appendChild(btnX);
-            grid.appendChild(card);
+
+            frente.appendChild(btnX);
+            inner.appendChild(frente);
+            inner.appendChild(atras);
+            container.appendChild(inner);
+            grid.appendChild(container);
         });
         actualizarEstadoBotones();
     }
@@ -227,27 +277,51 @@
     function actualizarEstadoBotones() {
         const btn = document.getElementById('btnSortear');
         if(participantes.length < 2) { btn.disabled = true; btn.innerText = "Faltan participantes"; }
-        else { btn.disabled = false; btn.innerText = "¡Pulsa para sortear!"; }
+        else { btn.disabled = false; btn.innerText = "¡Pulsa para Sortear!"; }
     }
 
-    // --- LÓGICA DE SORTEO ---
-    function comenzarSorteo() {
+    // --- FASE 1: PREPARACIÓN (OCULTAR Y BARAJAR) ---
+    function prepararSorteo() {
         if (participantes.length < 2) { alert("Necesitas al menos 2 participantes."); return; }
         sorteando = true;
-        toggleControles(true); 
-        document.querySelectorAll('.btn-eliminar').forEach(b => b.style.display = 'none');
-        document.getElementById('mensaje').innerText = "🎲 ¡Buscando ganador...";
+        toggleControles(true);
+        document.getElementById('mensaje').innerText = "🙈 Ocultando y barajando...";
 
+        // 1. Voltear cartas
+        const cartas = document.querySelectorAll('.tarjeta-container');
+        cartas.forEach(c => c.classList.add('flipped'));
+
+        // 2. Esperar a que se volteen (0.6s) y luego barajar INTERNAMENTE
+        setTimeout(() => {
+            // Barajamos el array
+            barajarArray();
+            // Re-renderizamos PERO mantenemos el estado volteado.
+            // Esto hace que los nombres cambien de lugar físicamente mientras el usuario solo ve signos de "?"
+            renderizarTarjetas(true); 
+            
+            // Iniciamos el recorrido de luces
+            comenzarRecorridoLuces();
+        }, 800);
+    }
+
+    // --- FASE 2: EL RECORRIDO DE LUCES ---
+    function comenzarRecorridoLuces() {
+        document.getElementById('mensaje').innerText = "🎲 Buscando la suerte...";
+        
         const indiceGanador = Math.floor(Math.random() * participantes.length);
         const tiempoTotal = 10000; const velocidad = 150; const tiempoInicio = Date.now();
-        let indiceVisualActual = -1; let tarjetasDOM = document.querySelectorAll('.tarjeta');
+        let indiceVisualActual = -1; 
+        
+        // Obtenemos referencias nuevas después del re-render
+        let tarjetasDOM = document.querySelectorAll('.tarjeta-container');
 
         const intervalo = setInterval(() => {
             if (indiceVisualActual !== -1) tarjetasDOM[indiceVisualActual].classList.remove('activo');
+            
             if (Date.now() - tiempoInicio > tiempoTotal) {
                 clearInterval(intervalo);
                 tarjetasDOM[indiceGanador].classList.add('activo');
-                // Llama a la nueva función de modal
+                // Revelar ganador
                 mostrarGanadorModal(participantes[indiceGanador], indiceGanador);
             } else {
                 let indiceRandom;
@@ -259,26 +333,25 @@
         }, velocidad);
     }
 
-    // --- FUNCIÓN MODAL CORREGIDA ---
+    // --- FASE 3: GANADOR Y RESET ---
     function mostrarGanadorModal(nombreGanador, indexGanador) {
         const modal = document.getElementById('modal-ganador');
         const nombreGrande = document.getElementById('nombre-ganador-grande');
         
-        // 1. Poner datos en el modal
         nombreGrande.innerText = nombreGanador;
-        
-        // 2. Mostrar modal (Display Flex)
         modal.style.display = 'flex';
 
-        // 3. Esperar 4 segundos
         setTimeout(() => {
-            // Ocultar modal
             modal.style.display = 'none';
             
-            // Lógica de limpieza
+            // Eliminar ganador
             participantes.splice(indexGanador, 1);
+            
+            // Barajar OTRA VEZ para que el orden inicial de la siguiente ronda sea distinto
             barajarArray();
-            renderizarTarjetas();
+            
+            // Mostrar cartas de nuevo (frente)
+            renderizarTarjetas(false); 
             
             sorteando = false;
             toggleControles(false);
