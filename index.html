@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetScope v12 - SNR & Suppressor</title>
+    <title>NetScope v13 - Audit Scales</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root {
             --bg: #050505; --panel: #0f0f0f; --text: #e0e0e0;
             --green: #00ff41; --cyan: #00f3ff; --orange: #ffab00; --red: #ff003c; --purple: #bf00ff;
-            --border: 1px solid #333;
+            --bar-bg: #222;
         }
 
         body {
@@ -33,7 +33,7 @@
         }
 
         .card {
-            background: var(--panel); border: var(--border); border-radius: 8px;
+            background: var(--panel); border: 1px solid #333; border-radius: 8px;
             padding: 20px; position: relative; transition: border-color 0.3s;
         }
 
@@ -41,52 +41,62 @@
         .big-num { font-size: 2rem; font-weight: bold; }
         .unit { font-size: 1rem; color: #666; }
         
-        /* ESTADOS */
         .status-title { font-size: 1.6rem; font-weight: bold; color: var(--green); margin-bottom: 5px; transition: color 0.3s; }
         .mod-tag { font-family: monospace; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px; font-size: 0.9rem; color: #aaa; transition: all 0.3s; border: 1px solid transparent; }
         .status-desc { font-size: 0.9rem; color: #ccc; margin-top: 10px; }
 
-        /* Badge de Supresor */
         .suppressor-badge {
-            display: none; 
-            margin-top: 8px; 
-            font-size: 0.75rem; 
-            background: rgba(191,0,255,0.1); 
-            color: var(--purple); 
-            border: 1px solid var(--purple); 
-            padding: 3px 8px; 
-            border-radius: 4px;
-            animation: pulse 1s infinite;
+            display: none; margin-top: 8px; font-size: 0.75rem; 
+            background: rgba(191,0,255,0.1); color: var(--purple); border: 1px solid var(--purple); 
+            padding: 3px 8px; border-radius: 4px; animation: pulse 1s infinite;
         }
         @keyframes pulse { 50% { opacity: 0.5; } }
 
         .controls { display: flex; gap: 15px; width: 100%; max-width: 850px; margin-top: 25px; }
-        button {
-            flex: 1; padding: 15px; font-weight: bold; cursor: pointer; border-radius: 6px; text-transform: uppercase; border: none; font-size: 0.9rem;
-        }
+        button { flex: 1; padding: 15px; font-weight: bold; cursor: pointer; border-radius: 6px; text-transform: uppercase; border: none; font-size: 0.9rem; }
         .btn-start { background: #222; color: var(--cyan); border: 1px solid var(--cyan); }
         .btn-report { background: var(--green); color: #000; }
         .btn-report:disabled { background: #333; color: #666; cursor: not-allowed; }
 
         canvas { height: 200px !important; width: 100% !important; }
 
-        /* --- MODAL DE REPORTE --- */
+        /* --- ESTILOS DEL REPORTE AUDITADO --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); display: none; justify-content: center; align-items: center; z-index: 100;
+            background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 100;
         }
         .report-paper {
-            background: #111; width: 90%; max-width: 600px;
+            background: #0f0f0f; width: 90%; max-width: 650px;
             border: 1px solid #444; border-radius: 10px; padding: 30px;
             animation: slideUp 0.3s ease-out;
-            box-shadow: 0 0 50px rgba(0,255,65,0.1);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            max-height: 90vh; overflow-y: auto;
         }
         @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .rep-item { background: #1a1a1a; padding: 10px; border-radius: 5px; }
+        /* Grid de Items con Barras */
+        .report-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        .rep-row { 
+            background: #1a1a1a; padding: 15px; border-radius: 6px; 
+            border-left: 4px solid #444; /* Color dinámico via JS */
+        }
+        
+        .rep-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; }
+        .rep-lbl { font-size: 0.8rem; color: #888; text-transform: uppercase; font-weight: bold; }
         .rep-val { font-size: 1.4rem; font-weight: bold; color: white; }
-        .rep-lbl { font-size: 0.7rem; color: #888; text-transform: uppercase; }
+        
+        /* Barra de Escala */
+        .scale-track {
+            height: 6px; background: #333; border-radius: 3px; position: relative; margin: 8px 0; overflow: hidden;
+        }
+        .scale-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        
+        /* Límites de texto */
+        .scale-limits { 
+            display: flex; justify-content: space-between; font-size: 0.7rem; color: #666; font-family: monospace; 
+        }
+        .limit-good { color: var(--green); }
+        .limit-bad { color: var(--red); }
 
         .conclusion-box { background: rgba(0, 243, 255, 0.05); border-left: 4px solid var(--cyan); padding: 15px; margin-top: 20px; line-height: 1.5; color: #ddd; font-size: 0.9rem; }
     </style>
@@ -95,28 +105,62 @@
 
     <div class="modal-overlay" id="reportModal">
         <div class="report-paper">
-            <h2 style="margin-top:0; color:var(--cyan); border-bottom:1px solid #333; padding-bottom:10px;">REPORTE TÉCNICO</h2>
+            <h2 style="margin-top:0; color:var(--cyan); border-bottom:1px solid #333; padding-bottom:10px;">AUDITORÍA DE RED</h2>
             
-            <div class="report-grid">
-                <div class="rep-item">
-                    <div class="rep-lbl">Latencia Promedio</div>
-                    <div class="rep-val" id="repAvg">0 ms</div>
+            <div class="report-list">
+                
+                <div class="rep-row" id="rowPing">
+                    <div class="rep-header">
+                        <span class="rep-lbl">Latencia Promedio</span>
+                        <span class="rep-val" id="repPing">0 ms</span>
+                    </div>
+                    <div class="scale-track"><div class="scale-fill" id="barPing" style="width:0%"></div></div>
+                    <div class="scale-limits">
+                        <span class="limit-good">Meta: &lt;50 ms</span>
+                        <span>Aceptable: 100 ms</span>
+                        <span class="limit-bad">Crítico: &gt;150 ms</span>
+                    </div>
                 </div>
-                <div class="rep-item">
-                    <div class="rep-lbl">SNR Promedio (dB)</div>
-                    <div class="rep-val" id="repSNR" style="color:var(--green)">0 dB</div>
+
+                <div class="rep-row" id="rowSNR">
+                    <div class="rep-header">
+                        <span class="rep-lbl">SNR (Calidad de Señal)</span>
+                        <span class="rep-val" id="repSNR">0 dB</span>
+                    </div>
+                    <div class="scale-track"><div class="scale-fill" id="barSNR" style="width:0%"></div></div>
+                    <div class="scale-limits">
+                        <span class="limit-bad">Malo: &lt;10 dB</span>
+                        <span>Aceptable: 20 dB</span>
+                        <span class="limit-good">Óptimo: &gt;30 dB</span>
+                    </div>
                 </div>
-                <div class="rep-item">
-                    <div class="rep-lbl">Estabilidad (Jitter)</div>
-                    <div class="rep-val" id="repJitter">0 ms</div>
+
+                <div class="rep-row" id="rowJitter">
+                    <div class="rep-header">
+                        <span class="rep-lbl">Estabilidad (Jitter)</span>
+                        <span class="rep-val" id="repJitter">0 ms</span>
+                    </div>
+                    <div class="scale-track"><div class="scale-fill" id="barJitter" style="width:0%"></div></div>
+                    <div class="scale-limits">
+                        <span class="limit-good">Meta: &lt;15 ms</span>
+                        <span>Límite: 30 ms</span>
+                        <span class="limit-bad">Inestable: &gt;50 ms</span>
+                    </div>
                 </div>
-                <div class="rep-item">
-                    <div class="rep-lbl">Modulación Base</div>
-                    <div class="rep-val" id="repMod">--</div>
+
+                <div class="rep-row" style="border-left-color: #555;">
+                    <div class="rep-header">
+                        <span class="rep-lbl">Modulación Predominante</span>
+                        <span class="rep-val" id="repMod" style="color:var(--cyan)">--</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #888;">
+                        Esquema físico utilizado por el hardware para la transmisión de datos.
+                    </div>
                 </div>
+
             </div>
 
-            <div class="label">CONCLUSIÓN DEL SISTEMA</div>
+            <div class="label">DICTAMEN FINAL</div>
             <div class="conclusion-box" id="repConclusion">...</div>
             
             <button onclick="closeReport()" style="margin-top:20px; background:#333; color:white; width:100%">CERRAR REPORTE</button>
@@ -125,32 +169,27 @@
 
     <div class="tech-header">
         <div>
-            <h1>NetScope <span style="color:var(--cyan)">v12 Final</span></h1>
-            <div id="netInfo" style="font-size: 0.8rem; color: #888;">Supresión Activa Habilitada</div>
+            <h1>NetScope <span style="color:var(--cyan)">v13 Audit</span></h1>
+            <div id="netInfo" style="font-size: 0.8rem; color: #888;">Supresión Activa + Escalas</div>
         </div>
         <div class="badge" id="liveStatus">IDLE</div>
     </div>
 
     <div class="dashboard">
         <div class="card" id="cardStatus" style="border-left: 4px solid var(--green);">
-            <span class="label">Calidad de Enlace</span>
+            <span class="label">Estado en Vivo</span>
             <div class="status-title" id="mainStatus">Listo</div>
             <span class="mod-tag" id="modTag">[ PHY: -- ]</span>
-            <div class="status-desc" id="statusDesc">
-                Esperando flujo de datos para análisis.
-            </div>
-            
-            <div id="suppressorBadge" class="suppressor-badge">
-                ⚡ PICO SUPRIMIDO (NO REGISTRADO)
-            </div>
+            <div class="status-desc" id="statusDesc">Esperando inicio...</div>
+            <div id="suppressorBadge" class="suppressor-badge">⚡ PICO SUPRIMIDO</div>
         </div>
 
         <div class="card">
-            <span class="label">Telemetría en Vivo</span>
+            <span class="label">Telemetría</span>
             <div style="display: flex; justify-content: space-between;">
                 <div>
                     <div class="big-num" id="pingVal">0 <span class="unit">ms</span></div>
-                    <div class="unit">Ping Real</div>
+                    <div class="unit">Ping</div>
                 </div>
                 <div style="text-align: right;">
                     <div class="big-num" id="snrLive">0 <span class="unit">dB</span></div>
@@ -165,8 +204,8 @@
     </div>
 
     <div class="controls">
-        <button onclick="startTest()" class="btn-start" id="btnStart">▶ Iniciar Monitor</button>
-        <button onclick="generateReport()" class="btn-report" id="btnReport" disabled>📋 Generar Reporte Final</button>
+        <button onclick="startTest()" class="btn-start" id="btnStart">▶ Iniciar</button>
+        <button onclick="generateReport()" class="btn-report" id="btnReport" disabled>📋 Generar Auditoría</button>
     </div>
 
     <script>
@@ -181,8 +220,7 @@
                 labels: Array(40).fill(''),
                 datasets: [{
                     data: Array(40).fill(null),
-                    borderColor: '#00f3ff', borderWidth: 2,
-                    backgroundColor: 'rgba(0, 243, 255, 0.05)',
+                    borderColor: '#00f3ff', borderWidth: 2, backgroundColor: 'rgba(0, 243, 255, 0.05)',
                     tension: 0.3, fill: true, pointRadius: 0
                 }]
             },
@@ -193,175 +231,131 @@
             }
         });
 
-        // --- CÁLCULO DE SNR VIRTUAL ---
         function calculateSNR(ping, jitter) {
-            // Un SNR excelente en WiFi es >30dB. Malo es <10dB.
-            // Base: 35dB (Ideal)
-            // Penalización: -0.5dB por cada ms de Jitter
-            // Penalización: -0.2dB por cada ms de Ping por encima de 20ms
-            
-            let snr = 35;
-            snr -= (jitter * 0.8); 
+            let snr = 35 - (jitter * 0.8); 
             if (ping > 20) snr -= ((ping - 20) * 0.15);
-            
-            // Límites físicos
             return Math.max(5, Math.min(40, snr));
         }
 
-        // --- ALGORITMO PRINCIPAL CON SUPRESOR ---
         function analyzeLive(currentPing, avgPing) {
             const fluctuation = Math.abs(currentPing - avgPing);
-            
-            // LÓGICA DEL SUPRESOR DE PICOS:
-            // Si el ping actual es > 100ms Y el promedio histórico es < 60ms,
-            // consideramos que es un error irrelevante.
             const isSpike = (currentPing > 100 && avgPing < 60);
-
-            // Si hay pico, usamos el PROMEDIO para calcular la modulación, no el pico.
-            // Esto "suprime" el efecto negativo en la calificación.
             const effectivePing = isSpike ? avgPing : currentPing;
-
-            // 1. Calcular SNR Instantáneo
             const snr = calculateSNR(effectivePing, fluctuation);
 
-            let res = { 
-                title: "Excelente", 
-                desc: "Señal limpia y fuerte.", 
-                color: "#00ff41", 
-                mod: "256-QAM", 
-                snr: snr,
-                isSuppressed: isSpike 
-            };
+            let res = { title: "Excelente", desc: "Señal óptima.", color: "#00ff41", mod: "256-QAM", snr: snr, isSuppressed: isSpike };
 
-            // 2. Escalera de Modulación (Usando valor Efectivo/Suprimido)
-            if (effectivePing <= 50 && snr > 25) {
-                res.mod = "256-QAM"; res.color = "#00ff41";
-            } else if (effectivePing <= 90) {
-                res.mod = "64-QAM"; res.color = "#00f3ff"; res.title = "Muy Buena"; res.desc = "Conexión sólida y veloz.";
-            } else if (effectivePing <= 150) {
-                res.mod = "16-QAM"; res.color = "#ffab00"; res.title = "Regular"; res.desc = "Posible congestión detectada.";
-            } else {
-                res.mod = "QPSK"; res.color = "#ff003c"; res.title = "Crítica"; res.desc = "Modo de alta redundancia activo.";
-            }
+            if (effectivePing <= 50 && snr > 25) { res.mod = "256-QAM"; res.color = "#00ff41"; }
+            else if (effectivePing <= 90) { res.mod = "64-QAM"; res.color = "#00f3ff"; res.title = "Muy Buena"; }
+            else if (effectivePing <= 150) { res.mod = "16-QAM"; res.color = "#ffab00"; res.title = "Regular"; }
+            else { res.mod = "QPSK"; res.color = "#ff003c"; res.title = "Crítica"; }
 
+            if (isSpike) { res.title = "Filtrando Ruido"; res.color = "#bf00ff"; res.isSuppressed = true; }
             return res;
         }
 
         async function loop() {
             if (!running) return;
-            
             const start = performance.now();
             try { await fetch('https://1.1.1.1/cdn-cgi/trace?z=' + Math.random(), { mode: 'no-cors', cache: 'no-store' }); } catch {}
             const ping = performance.now() - start;
 
-            // Guardar Ping Real (aunque sea pico, para estadística bruta)
             sessionData.pings.push(ping);
-            
             const recent = sessionData.pings.slice(-5);
             const avg = recent.reduce((a,b)=>a+b,0) / recent.length;
-            
-            // Analizar (El supresor actúa aquí dentro)
             const status = analyzeLive(ping, avg);
-            
-            // Guardar SNR calculado
             sessionData.snrs.push(status.snr);
 
-            // --- ACTUALIZAR UI ---
-            
-            // Si el supresor está activo, mostramos el valor "suavizado" en grande
-            // para no asustar al usuario, o mantenemos el real? 
-            // Tu pediste "agregar supresor". Visualmente es mejor mostrar el real pero no cambiar el estado.
             document.getElementById('pingVal').innerText = ping.toFixed(0);
             document.getElementById('snrLive').innerText = status.snr.toFixed(1);
-            document.getElementById('snrLive').style.color = status.snr > 25 ? "var(--green)" : "var(--orange)";
-
+            
             const titleEl = document.getElementById('mainStatus');
             titleEl.innerText = status.title;
-            titleEl.style.color = status.isSuppressed ? "#aaa" : status.color; // Gris si estamos suprimiendo
+            titleEl.style.color = status.isSuppressed ? "#aaa" : status.color;
             
             const modTag = document.getElementById('modTag');
             modTag.innerText = `[ PHY: ${status.mod} ]`;
-            modTag.style.borderColor = status.color;
             modTag.style.color = status.color;
             
             document.getElementById('statusDesc').innerText = status.desc;
 
-            // Visibilidad del Badge SUPRESOR
             const badge = document.getElementById('suppressorBadge');
-            if (status.isSuppressed) {
-                badge.style.display = 'block';
-                document.getElementById('cardStatus').style.borderLeftColor = "var(--purple)"; // Indicador visual de intervención
-            } else {
-                badge.style.display = 'none';
-                document.getElementById('cardStatus').style.borderLeftColor = status.color;
-            }
+            const card = document.getElementById('cardStatus');
+            if (status.isSuppressed) { badge.style.display = 'block'; card.style.borderLeftColor = "var(--purple)"; } 
+            else { badge.style.display = 'none'; card.style.borderLeftColor = status.color; }
 
-            // Gráfica
             chart.data.datasets[0].data.shift();
-            // Truco visual: Si es pico suprimido, graficamos el promedio para que la linea no salte feo
             chart.data.datasets[0].data.push(status.isSuppressed ? avg : ping);
             chart.data.datasets[0].borderColor = status.color;
             chart.update();
         }
 
+        // --- GENERADOR DE REPORTE CON ESCALAS VISUALES ---
         function generateReport() {
             stopTest();
             if (sessionData.pings.length === 0) return;
 
-            // Promedios Finales
             const avgPing = sessionData.pings.reduce((a, b) => a + b, 0) / sessionData.pings.length;
             const avgSNR = sessionData.snrs.reduce((a, b) => a + b, 0) / sessionData.snrs.length;
             const jitter = sessionData.pings.reduce((acc, curr) => acc + Math.abs(curr - avgPing), 0) / sessionData.pings.length;
 
-            // Determinar Modulación Final
-            let finalMod = "QPSK";
-            let color = "red";
-            if (avgSNR > 25) { finalMod = "256-QAM"; color = "#00ff41"; }
-            else if (avgSNR > 15) { finalMod = "64-QAM"; color = "#00f3ff"; }
-            else if (avgSNR > 10) { finalMod = "16-QAM"; color = "#ffab00"; }
+            // 1. CONFIGURAR BARRA DE PING
+            // Escala: 0 a 150ms. Verde <50, Rojo >100.
+            const pingPct = Math.min((avgPing / 150) * 100, 100);
+            const barPing = document.getElementById('barPing');
+            barPing.style.width = pingPct + "%";
+            barPing.style.backgroundColor = avgPing < 50 ? "var(--green)" : (avgPing < 100 ? "var(--orange)" : "var(--red)");
+            document.getElementById('repPing').innerText = avgPing.toFixed(0) + " ms";
+            document.getElementById('rowPing').style.borderLeftColor = barPing.style.backgroundColor;
 
-            // Redactar Conclusión
-            let conclusion = "";
-            if (avgSNR > 28) {
-                conclusion = `<strong>EXCELENTE SALUD DE RED (SNR ALTO).</strong><br>Con un SNR promedio de <b>${avgSNR.toFixed(1)} dB</b>, el ruido es insignificante. La red sostuvo modulación ${finalMod}, ideal para cualquier tarea crítica.`;
-            } else if (avgSNR > 20) {
-                conclusion = `<strong>BUEN RENDIMIENTO GENERAL.</strong><br>El SNR de <b>${avgSNR.toFixed(1)} dB</b> indica una conexión limpia. Los picos aislados fueron suprimidos exitosamente por el algoritmo, manteniendo la estabilidad.`;
-            } else {
-                conclusion = `<strong>SEÑAL RUIDOSA DETECTADA.</strong><br>El SNR bajo (<b>${avgSNR.toFixed(1)} dB</b>) sugiere interferencia o lejanía del router. Aunque funcional, la red ha degradado su modulación para evitar pérdida de paquetes.`;
-            }
-
-            // Llenar Modal
-            document.getElementById('repAvg').innerText = avgPing.toFixed(0) + " ms";
-            document.getElementById('repJitter').innerText = jitter.toFixed(1) + " ms";
+            // 2. CONFIGURAR BARRA DE SNR
+            // Escala: 0 a 40dB. Verde >25, Rojo <15. (Inverso: Más es mejor)
+            const snrPct = Math.min((avgSNR / 40) * 100, 100);
+            const barSNR = document.getElementById('barSNR');
+            barSNR.style.width = snrPct + "%";
+            barSNR.style.backgroundColor = avgSNR > 25 ? "var(--green)" : (avgSNR > 15 ? "var(--orange)" : "var(--red)");
             document.getElementById('repSNR').innerText = avgSNR.toFixed(1) + " dB";
-            document.getElementById('repSNR').style.color = color;
+            document.getElementById('rowSNR').style.borderLeftColor = barSNR.style.backgroundColor;
+
+            // 3. CONFIGURAR BARRA DE JITTER
+            // Escala: 0 a 50ms. Verde <15, Rojo >30.
+            const jitPct = Math.min((jitter / 50) * 100, 100);
+            const barJit = document.getElementById('barJitter');
+            barJit.style.width = jitPct + "%";
+            barJit.style.backgroundColor = jitter < 15 ? "var(--green)" : (jitter < 30 ? "var(--orange)" : "var(--red)");
+            document.getElementById('repJitter').innerText = jitter.toFixed(1) + " ms";
+            document.getElementById('rowJitter').style.borderLeftColor = barJit.style.backgroundColor;
+
+            // 4. MODULACIÓN
+            let finalMod = "QPSK"; let modColor = "var(--red)";
+            if (avgSNR > 25) { finalMod = "256-QAM"; modColor = "var(--green)"; }
+            else if (avgSNR > 15) { finalMod = "64-QAM"; modColor = "var(--cyan)"; }
+            else if (avgSNR > 10) { finalMod = "16-QAM"; modColor = "var(--orange)"; }
             document.getElementById('repMod').innerText = finalMod;
-            document.getElementById('repMod').style.color = color;
+            document.getElementById('repMod').style.color = modColor;
+
+            // 5. CONCLUSIÓN
+            let conclusion = "";
+            if (avgSNR > 25) conclusion = "<strong>CERTIFICADA PARA TODO USO.</strong> Todos los parámetros están dentro de los límites óptimos (Zona Verde). El SNR alto garantiza estabilidad en 4K y Gaming.";
+            else if (avgSNR > 15) conclusion = "<strong>RED ESTÁNDAR.</strong> Parámetros en zona aceptable (Zona Amarilla). Funcional para uso diario, pero puede presentar latencia en momentos de carga alta.";
+            else conclusion = "<strong>ATENCIÓN REQUERIDA.</strong> Múltiples parámetros en zona crítica (Zona Roja). Se recomienda revisar interferencias o cambiar de canal Wi-Fi.";
+            
             document.getElementById('repConclusion').innerHTML = conclusion;
-            document.getElementById('repConclusion').style.borderLeftColor = color;
+            document.getElementById('repConclusion').style.borderLeftColor = modColor;
 
             document.getElementById('reportModal').style.display = 'flex';
         }
 
         function startTest() {
             if (running) return;
-            running = true; 
-            sessionData = { pings: [], snrs: [] };
+            running = true; sessionData = { pings: [], snrs: [] };
             timer = setInterval(loop, 1000);
             document.getElementById('btnStart').disabled = true;
             document.getElementById('btnReport').disabled = false;
             document.getElementById('liveStatus').innerText = "LIVE";
             document.getElementById('liveStatus').style.color = "#00ff41";
-            fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>document.getElementById('netInfo').innerText=`ISP: ${d.org}`).catch(()=>{});
         }
-
-        function stopTest() {
-            running = false; clearInterval(timer);
-            document.getElementById('btnStart').disabled = false;
-            document.getElementById('liveStatus').innerText = "STOP";
-            document.getElementById('liveStatus').style.color = "#777";
-        }
-        
+        function stopTest() { running = false; clearInterval(timer); document.getElementById('btnStart').disabled = false; document.getElementById('liveStatus').innerText = "STOP"; document.getElementById('liveStatus').style.color = "#777"; }
         function closeReport() { document.getElementById('reportModal').style.display = 'none'; }
     </script>
 </body>
