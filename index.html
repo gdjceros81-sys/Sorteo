@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NetScope v13 - Audit Scales</title>
+    <title>NetScope v14 - PDF Export</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         :root {
             --bg: #050505; --panel: #0f0f0f; --text: #e0e0e0;
@@ -57,6 +59,11 @@
         .btn-start { background: #222; color: var(--cyan); border: 1px solid var(--cyan); }
         .btn-report { background: var(--green); color: #000; }
         .btn-report:disabled { background: #333; color: #666; cursor: not-allowed; }
+        
+        /* Botones del Modal */
+        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-pdf { background: #fff; color: #000; }
+        .btn-close { background: #333; color: #fff; }
 
         canvas { height: 200px !important; width: 100% !important; }
 
@@ -66,7 +73,7 @@
             background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 100;
         }
         .report-paper {
-            background: #0f0f0f; width: 90%; max-width: 650px;
+            background: #0f0f0f; width: 90%; max-width: 700px;
             border: 1px solid #444; border-radius: 10px; padding: 30px;
             animation: slideUp 0.3s ease-out;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
@@ -74,103 +81,127 @@
         }
         @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* Grid de Items con Barras */
+        /* Área imprimible para el PDF */
+        #printableArea {
+            background: #0f0f0f; /* Asegura fondo oscuro en PDF */
+            padding: 10px;
+            color: #e0e0e0;
+        }
+
+        /* Header del Reporte */
+        .rep-meta {
+            border-bottom: 1px solid #333; padding-bottom: 10px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: flex-end;
+        }
+        .meta-isp { font-size: 1.1rem; color: white; font-weight: bold; }
+        .meta-sub { font-size: 0.8rem; color: #888; }
+
+        /* Grid de Items */
         .report-list { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
         .rep-row { 
             background: #1a1a1a; padding: 15px; border-radius: 6px; 
-            border-left: 4px solid #444; /* Color dinámico via JS */
+            border-left: 4px solid #444;
+            page-break-inside: avoid; /* Evita que se corte en el PDF */
         }
         
         .rep-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px; }
         .rep-lbl { font-size: 0.8rem; color: #888; text-transform: uppercase; font-weight: bold; }
         .rep-val { font-size: 1.4rem; font-weight: bold; color: white; }
         
-        /* Barra de Escala */
-        .scale-track {
-            height: 6px; background: #333; border-radius: 3px; position: relative; margin: 8px 0; overflow: hidden;
-        }
+        .scale-track { height: 6px; background: #333; border-radius: 3px; position: relative; margin: 8px 0; overflow: hidden; }
         .scale-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-        
-        /* Límites de texto */
-        .scale-limits { 
-            display: flex; justify-content: space-between; font-size: 0.7rem; color: #666; font-family: monospace; 
-        }
+        .scale-limits { display: flex; justify-content: space-between; font-size: 0.7rem; color: #666; font-family: monospace; }
         .limit-good { color: var(--green); }
         .limit-bad { color: var(--red); }
 
-        .conclusion-box { background: rgba(0, 243, 255, 0.05); border-left: 4px solid var(--cyan); padding: 15px; margin-top: 20px; line-height: 1.5; color: #ddd; font-size: 0.9rem; }
+        .conclusion-box { 
+            background: rgba(0, 243, 255, 0.05); border-left: 4px solid var(--cyan); 
+            padding: 15px; margin-top: 20px; line-height: 1.5; color: #ddd; font-size: 0.9rem; 
+        }
     </style>
 </head>
 <body>
 
     <div class="modal-overlay" id="reportModal">
         <div class="report-paper">
-            <h2 style="margin-top:0; color:var(--cyan); border-bottom:1px solid #333; padding-bottom:10px;">AUDITORÍA DE RED</h2>
             
-            <div class="report-list">
+            <div id="printableArea">
+                <div class="rep-meta">
+                    <div>
+                        <h2 style="margin:0; color:var(--cyan); margin-bottom:5px;">AUDITORÍA DE RED</h2>
+                        <div class="meta-isp" id="repISP">Detectando ISP...</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div class="meta-sub" id="repDate">--/--/--</div>
+                        <div class="meta-sub" id="repID">ID: #0000</div>
+                    </div>
+                </div>
                 
-                <div class="rep-row" id="rowPing">
-                    <div class="rep-header">
-                        <span class="rep-lbl">Latencia Promedio</span>
-                        <span class="rep-val" id="repPing">0 ms</span>
+                <div class="report-list">
+                    <div class="rep-row" id="rowPing">
+                        <div class="rep-header">
+                            <span class="rep-lbl">Latencia Promedio</span>
+                            <span class="rep-val" id="repPing">0 ms</span>
+                        </div>
+                        <div class="scale-track"><div class="scale-fill" id="barPing" style="width:0%"></div></div>
+                        <div class="scale-limits">
+                            <span class="limit-good">Meta: &lt;50 ms</span>
+                            <span>Aceptable: 100 ms</span>
+                            <span class="limit-bad">Crítico: &gt;150 ms</span>
+                        </div>
                     </div>
-                    <div class="scale-track"><div class="scale-fill" id="barPing" style="width:0%"></div></div>
-                    <div class="scale-limits">
-                        <span class="limit-good">Meta: &lt;50 ms</span>
-                        <span>Aceptable: 100 ms</span>
-                        <span class="limit-bad">Crítico: &gt;150 ms</span>
+
+                    <div class="rep-row" id="rowSNR">
+                        <div class="rep-header">
+                            <span class="rep-lbl">SNR (Calidad de Señal)</span>
+                            <span class="rep-val" id="repSNR">0 dB</span>
+                        </div>
+                        <div class="scale-track"><div class="scale-fill" id="barSNR" style="width:0%"></div></div>
+                        <div class="scale-limits">
+                            <span class="limit-bad">Malo: &lt;10 dB</span>
+                            <span>Aceptable: 20 dB</span>
+                            <span class="limit-good">Óptimo: &gt;30 dB</span>
+                        </div>
+                    </div>
+
+                    <div class="rep-row" id="rowJitter">
+                        <div class="rep-header">
+                            <span class="rep-lbl">Estabilidad (Jitter)</span>
+                            <span class="rep-val" id="repJitter">0 ms</span>
+                        </div>
+                        <div class="scale-track"><div class="scale-fill" id="barJitter" style="width:0%"></div></div>
+                        <div class="scale-limits">
+                            <span class="limit-good">Meta: &lt;15 ms</span>
+                            <span>Límite: 30 ms</span>
+                            <span class="limit-bad">Inestable: &gt;50 ms</span>
+                        </div>
+                    </div>
+
+                    <div class="rep-row" style="border-left-color: #555;">
+                        <div class="rep-header">
+                            <span class="rep-lbl">Modulación Predominante</span>
+                            <span class="rep-val" id="repMod" style="color:var(--cyan)">--</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: #888; margin-top:5px;">
+                            Esquema físico utilizado durante la sesión de prueba.
+                        </div>
                     </div>
                 </div>
 
-                <div class="rep-row" id="rowSNR">
-                    <div class="rep-header">
-                        <span class="rep-lbl">SNR (Calidad de Señal)</span>
-                        <span class="rep-val" id="repSNR">0 dB</span>
-                    </div>
-                    <div class="scale-track"><div class="scale-fill" id="barSNR" style="width:0%"></div></div>
-                    <div class="scale-limits">
-                        <span class="limit-bad">Malo: &lt;10 dB</span>
-                        <span>Aceptable: 20 dB</span>
-                        <span class="limit-good">Óptimo: &gt;30 dB</span>
-                    </div>
-                </div>
-
-                <div class="rep-row" id="rowJitter">
-                    <div class="rep-header">
-                        <span class="rep-lbl">Estabilidad (Jitter)</span>
-                        <span class="rep-val" id="repJitter">0 ms</span>
-                    </div>
-                    <div class="scale-track"><div class="scale-fill" id="barJitter" style="width:0%"></div></div>
-                    <div class="scale-limits">
-                        <span class="limit-good">Meta: &lt;15 ms</span>
-                        <span>Límite: 30 ms</span>
-                        <span class="limit-bad">Inestable: &gt;50 ms</span>
-                    </div>
-                </div>
-
-                <div class="rep-row" style="border-left-color: #555;">
-                    <div class="rep-header">
-                        <span class="rep-lbl">Modulación Predominante</span>
-                        <span class="rep-val" id="repMod" style="color:var(--cyan)">--</span>
-                    </div>
-                    <div style="font-size: 0.75rem; color: #888;">
-                        Esquema físico utilizado por el hardware para la transmisión de datos.
-                    </div>
-                </div>
-
+                <div class="label">DICTAMEN FINAL</div>
+                <div class="conclusion-box" id="repConclusion">...</div>
             </div>
-
-            <div class="label">DICTAMEN FINAL</div>
-            <div class="conclusion-box" id="repConclusion">...</div>
-            
-            <button onclick="closeReport()" style="margin-top:20px; background:#333; color:white; width:100%">CERRAR REPORTE</button>
+            <div class="modal-btns">
+                <button onclick="downloadPDF()" class="btn-pdf">⬇ DESCARGAR PDF</button>
+                <button onclick="closeReport()" class="btn-close">CERRAR</button>
+            </div>
         </div>
     </div>
 
     <div class="tech-header">
         <div>
-            <h1>NetScope <span style="color:var(--cyan)">v13 Audit</span></h1>
-            <div id="netInfo" style="font-size: 0.8rem; color: #888;">Supresión Activa + Escalas</div>
+            <h1>NetScope <span style="color:var(--cyan)">v14 Ultimate</span></h1>
+            <div id="netInfo" style="font-size: 0.8rem; color: #888;">Detectando ISP...</div>
         </div>
         <div class="badge" id="liveStatus">IDLE</div>
     </div>
@@ -212,6 +243,7 @@
         let running = false;
         let timer;
         let sessionData = { pings: [], snrs: [] }; 
+        let currentISP = "Desconocido"; // Variable para guardar el ISP
 
         const ctx = document.getElementById('chart').getContext('2d');
         const chart = new Chart(ctx, {
@@ -243,7 +275,7 @@
             const effectivePing = isSpike ? avgPing : currentPing;
             const snr = calculateSNR(effectivePing, fluctuation);
 
-            let res = { title: "Excelente", desc: "Señal óptima.", color: "#00ff41", mod: "256-QAM", snr: snr, isSuppressed: isSpike };
+            let res = { title: "Excelente",  color: "#00ff41", mod: "256-QAM", snr: snr, isSuppressed: isSpike };
 
             if (effectivePing <= 50 && snr > 25) { res.mod = "256-QAM"; res.color = "#00ff41"; }
             else if (effectivePing <= 90) { res.mod = "64-QAM"; res.color = "#00f3ff"; res.title = "Muy Buena"; }
@@ -290,7 +322,6 @@
             chart.update();
         }
 
-        // --- GENERADOR DE REPORTE CON ESCALAS VISUALES ---
         function generateReport() {
             stopTest();
             if (sessionData.pings.length === 0) return;
@@ -299,8 +330,12 @@
             const avgSNR = sessionData.snrs.reduce((a, b) => a + b, 0) / sessionData.snrs.length;
             const jitter = sessionData.pings.reduce((acc, curr) => acc + Math.abs(curr - avgPing), 0) / sessionData.pings.length;
 
-            // 1. CONFIGURAR BARRA DE PING
-            // Escala: 0 a 150ms. Verde <50, Rojo >100.
+            // LLENAR DATOS DEL REPORTE
+            document.getElementById('repISP').innerText = currentISP;
+            document.getElementById('repDate').innerText = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
+            document.getElementById('repID').innerText = "REF-" + Math.floor(Math.random()*10000);
+
+            // 1. PING
             const pingPct = Math.min((avgPing / 150) * 100, 100);
             const barPing = document.getElementById('barPing');
             barPing.style.width = pingPct + "%";
@@ -308,8 +343,7 @@
             document.getElementById('repPing').innerText = avgPing.toFixed(0) + " ms";
             document.getElementById('rowPing').style.borderLeftColor = barPing.style.backgroundColor;
 
-            // 2. CONFIGURAR BARRA DE SNR
-            // Escala: 0 a 40dB. Verde >25, Rojo <15. (Inverso: Más es mejor)
+            // 2. SNR
             const snrPct = Math.min((avgSNR / 40) * 100, 100);
             const barSNR = document.getElementById('barSNR');
             barSNR.style.width = snrPct + "%";
@@ -317,8 +351,7 @@
             document.getElementById('repSNR').innerText = avgSNR.toFixed(1) + " dB";
             document.getElementById('rowSNR').style.borderLeftColor = barSNR.style.backgroundColor;
 
-            // 3. CONFIGURAR BARRA DE JITTER
-            // Escala: 0 a 50ms. Verde <15, Rojo >30.
+            // 3. JITTER
             const jitPct = Math.min((jitter / 50) * 100, 100);
             const barJit = document.getElementById('barJitter');
             barJit.style.width = jitPct + "%";
@@ -326,24 +359,45 @@
             document.getElementById('repJitter').innerText = jitter.toFixed(1) + " ms";
             document.getElementById('rowJitter').style.borderLeftColor = barJit.style.backgroundColor;
 
-            // 4. MODULACIÓN
+            // 4. MODULACIÓN Y CONCLUSIÓN
             let finalMod = "QPSK"; let modColor = "var(--red)";
-            if (avgSNR > 25) { finalMod = "256-QAM"; modColor = "var(--green)"; }
-            else if (avgSNR > 15) { finalMod = "64-QAM"; modColor = "var(--cyan)"; }
-            else if (avgSNR > 10) { finalMod = "16-QAM"; modColor = "var(--orange)"; }
-            document.getElementById('repMod').innerText = finalMod;
-            document.getElementById('repMod').style.color = modColor;
-
-            // 5. CONCLUSIÓN
             let conclusion = "";
-            if (avgSNR > 25) conclusion = "<strong>CERTIFICADA PARA TODO USO.</strong> Todos los parámetros están dentro de los límites óptimos (Zona Verde). El SNR alto garantiza estabilidad en 4K y Gaming.";
-            else if (avgSNR > 15) conclusion = "<strong>RED ESTÁNDAR.</strong> Parámetros en zona aceptable (Zona Amarilla). Funcional para uso diario, pero puede presentar latencia en momentos de carga alta.";
-            else conclusion = "<strong>ATENCIÓN REQUERIDA.</strong> Múltiples parámetros en zona crítica (Zona Roja). Se recomienda revisar interferencias o cambiar de canal Wi-Fi.";
             
+            if (avgSNR > 25) { 
+                finalMod = "256-QAM"; modColor = "var(--green)";
+                conclusion = "<strong>CERTIFICADA PARA TODO USO.</strong> Todos los parámetros están dentro de los límites óptimos (Zona Verde). El SNR alto garantiza estabilidad en 4K y Gaming.";
+            } else if (avgSNR > 15) { 
+                finalMod = "64-QAM"; modColor = "var(--cyan)";
+                conclusion = "<strong>RED ESTÁNDAR.</strong> Parámetros en zona aceptable (Zona Amarilla). Funcional para uso diario, pero puede presentar latencia en momentos de carga alta.";
+            } else { 
+                finalMod = "16-QAM"; modColor = "var(--orange)";
+                conclusion = "<strong>ATENCIÓN REQUERIDA.</strong> Múltiples parámetros en zona crítica. Se detecta alta interferencia o señal débil.";
+            }
+            
+            const modEl = document.getElementById('repMod');
+            modEl.innerText = finalMod; modEl.style.color = modColor;
+
             document.getElementById('repConclusion').innerHTML = conclusion;
             document.getElementById('repConclusion').style.borderLeftColor = modColor;
 
             document.getElementById('reportModal').style.display = 'flex';
+        }
+
+        function downloadPDF() {
+            // Seleccionamos el área imprimible
+            const element = document.getElementById('printableArea');
+            
+            // Opciones de configuración del PDF
+            const opt = {
+                margin:       10,
+                filename:     `Auditoria_NetScope_${new Date().toISOString().slice(0,10)}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, backgroundColor: "#0f0f0f" }, // Mantiene fondo oscuro
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Ejecutar generación
+            html2pdf().set(opt).from(element).save();
         }
 
         function startTest() {
@@ -354,9 +408,23 @@
             document.getElementById('btnReport').disabled = false;
             document.getElementById('liveStatus').innerText = "LIVE";
             document.getElementById('liveStatus').style.color = "#00ff41";
+            
+            // FETCH DE ISP AL INICIO
+            fetch('https://ipapi.co/json/')
+                .then(r => r.json())
+                .then(d => {
+                    currentISP = `${d.org} (${d.city}, ${d.country_code})`;
+                    document.getElementById('netInfo').innerText = `ISP: ${d.org}`;
+                })
+                .catch(() => {
+                    currentISP = "Red Privada / ISP Oculto";
+                    document.getElementById('netInfo').innerText = "ISP: Desconocido";
+                });
         }
+        
         function stopTest() { running = false; clearInterval(timer); document.getElementById('btnStart').disabled = false; document.getElementById('liveStatus').innerText = "STOP"; document.getElementById('liveStatus').style.color = "#777"; }
         function closeReport() { document.getElementById('reportModal').style.display = 'none'; }
     </script>
 </body>
 </html>
+
