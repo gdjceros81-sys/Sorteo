@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NetScope v32 - Comparative</title>
+    <title>NetScope v33 - Diagnostic Suite</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -12,7 +12,7 @@
         :root {
             --bg: #050505; --panel: #101010; --text: #e0e0e0;
             --green: #00ff41; --cyan: #00f3ff; --orange: #ffab00; --red: #ff003c;
-            --purple: #bf00ff; /* Color para Gateway/WLAN */
+            --purple: #bf00ff; /* Color Gateway/WLAN */
         }
 
         body {
@@ -23,12 +23,12 @@
             overflow-x: hidden;
         }
 
-        /* HEADER & ISP INFO */
+        /* HEADER */
         .tech-header { width: 100%; max-width: 1000px; border-bottom: 2px solid var(--cyan); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         h1 { margin: 0; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; }
         .isp-badge { background: #1a1a1a; color: var(--cyan); padding: 5px 10px; border: 1px solid var(--cyan); border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-top: 5px; }
 
-        /* GATEWAY INPUT BAR */
+        /* GATEWAY BAR */
         .gateway-bar {
             width: 100%; max-width: 1000px; background: #151515; border: 1px solid #333; border-radius: 8px;
             padding: 10px; margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
@@ -36,14 +36,14 @@
         .gw-input { background: #000; border: 1px solid #444; color: var(--purple); padding: 8px; border-radius: 4px; font-family: monospace; flex: 1; min-width: 120px; }
         .chk-label { font-size: 0.8rem; display: flex; align-items: center; gap: 5px; cursor: pointer; color: #ccc; }
 
-        /* DASHBOARD */
+        /* DASHBOARD GRID */
         .dashboard { display: grid; grid-template-columns: 1fr; gap: 15px; width: 100%; max-width: 1000px; }
         @media (min-width: 768px) { .dashboard { grid-template-columns: 1fr 1fr; } .full-width { grid-column: 1 / -1; } }
 
-        .card { background: var(--panel); border: 1px solid #333; border-radius: 8px; padding: 15px; position: relative; }
-        .label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 5px; display: block; font-weight: bold; }
+        .card { background: var(--panel); border: 1px solid #333; border-radius: 8px; padding: 15px; position: relative; display: flex; flex-direction: column; justify-content: center; }
+        .label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-bottom: 10px; display: block; font-weight: bold; }
         .big-num { font-size: 1.8rem; font-weight: bold; }
-        .unit { font-size: 0.9rem; color: #666; }
+        .unit { font-size: 0.8rem; color: #666; display: block; margin-top: -5px;}
 
         /* DOMINANT BOX */
         .dominant-box {
@@ -92,7 +92,7 @@
         <div class="report-paper">
             <div id="printableArea">
                 <div style="border-bottom:2px solid #333; margin-bottom:15px; padding-bottom:10px;">
-                    <h2 style="margin:0; color:var(--cyan);">AUDITORÍA COMPARATIVA (WAN vs WLAN)</h2>
+                    <h2 style="margin:0; color:var(--cyan);">AUDITORÍA TÉCNICA DE RED</h2>
                     <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#888;">
                         <span id="repIspFull">ISP: --</span>
                         <span id="repDate">--</span>
@@ -100,27 +100,50 @@
                 </div>
 
                 <div style="background:#151515; padding:15px; border-radius:6px; margin-bottom:20px; border-left:4px solid var(--green);">
-                    <span class="label">MODULACIÓN PREDOMINANTE (WAN)</span>
+                    <span class="label">ESTIMACIÓN DE MODULACIÓN EFECTIVA</span>
                     <div id="repDomVal" style="font-size:1.8rem; font-weight:bold; color:white;">--</div>
                 </div>
 
+                <div class="label" style="border-bottom:1px solid #333; margin-bottom:10px;">MÉTRICAS COMPARATIVAS (WAN vs WLAN)</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:20px;">
-                    <div class="card"><span class="label">Latencia Internet (WAN)</span><b id="repWan" style="font-size:1.2rem; color:var(--cyan)">0 ms</b></div>
-                    <div class="card"><span class="label">Latencia Local (WLAN)</span><b id="repLan" style="font-size:1.2rem; color:var(--purple)">0 ms</b></div>
+                    <div style="border:1px solid #333; padding:10px; border-radius:5px;">
+                        <div style="color:var(--cyan); font-weight:bold; margin-bottom:5px;">SEGMENTO INTERNET (WAN)</div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Latencia:</span> <b id="repWanPing" style="color:white">0 ms</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>SNR Estimado:</span> <b id="repWanSnr" style="color:white">0 dB</b>
+                        </div>
+                    </div>
+                    <div style="border:1px solid #333; padding:10px; border-radius:5px;">
+                        <div style="color:var(--purple); font-weight:bold; margin-bottom:5px;">SEGMENTO LOCAL (WLAN)</div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Latencia:</span> <b id="repLanPing" style="color:white">0 ms</b>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>SNR Estimado:</span> <b id="repLanSnr" style="color:white">0 dB</b>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="label">COMPARATIVA DE ESTABILIDAD</div>
+                <div class="label">MONITOR DE ESTABILIDAD</div>
                 <div style="background:#fff; padding:10px; border-radius:6px; margin-bottom:20px;">
                     <canvas id="repLineCanvas" style="height:150px !important;"></canvas>
                 </div>
 
-                <div class="label">DENSIDAD ESPECTRAL (COMPARADA)</div>
-                <div style="background:#fff; padding:10px; border-radius:6px;">
+                <div class="label">DENSIDAD DE PROBABILIDAD</div>
+                <div style="background:#fff; padding:10px; border-radius:6px; margin-bottom:20px;">
                     <canvas id="repCurveCanvas" style="height:150px !important;"></canvas>
                 </div>
 
-                <div class="label" style="margin-top:20px;">DICTAMEN TÉCNICO</div>
-                <div id="repConclusion" style="background:rgba(0,243,255,0.05); padding:10px; border-left:4px solid var(--cyan); font-size:0.85rem; color:#ddd;">...</div>
+                <div class="label">DICTAMEN TÉCNICO DETALLADO</div>
+                <div id="repConclusion" style="background:rgba(0,243,255,0.05); padding:10px; border-left:4px solid var(--cyan); font-size:0.85rem; color:#ddd; margin-bottom:20px; line-height:1.5;">...</div>
+
+                <div class="label" style="color:var(--orange);">RECOMENDACIONES DE CORRECCIÓN</div>
+                <div id="repRecommendations" style="border:1px dashed #555; padding:15px; border-radius:5px; font-size:0.85rem; color:#ccc;">
+                    <ul id="recList" style="margin:0; padding-left:20px;"></ul>
+                </div>
+
             </div>
             <div class="controls">
                 <button onclick="downloadPDF()" class="btn-report">Descargar PDF</button>
@@ -131,7 +154,7 @@
 
     <div class="tech-header">
         <div>
-            <h1>NetScope <span style="color:var(--cyan)">v32 Comparative</span></h1>
+            <h1>NetScope <span style="color:var(--cyan)">v33 Diagnostic Suite</span></h1>
             <div id="headerISP" class="isp-badge">Detectando ISP...</div>
         </div>
         <div class="badge" id="liveStatus">IDLE</div>
@@ -140,35 +163,45 @@
     <div class="gateway-bar">
         <label class="chk-label">
             <input type="checkbox" id="chkGateway" onchange="toggleGateway()" checked> 
-            Comparar con WLAN (Gateway)
+            Analizar WLAN (Gateway)
         </label>
         <input type="text" id="gatewayIp" class="gw-input" value="192.168.1.254" placeholder="IP Router">
     </div>
 
     <div class="dashboard">
         <div class="card full-width">
-            <span class="label">ANÁLISIS DE PREDOMINANCIA (WAN)</span>
+            <span class="label">MODULACIÓN EFECTIVA (DEDUCIDA)</span>
             <div class="dominant-box" id="domBox">
-                <div class="dom-label">MODULACIÓN PREDOMINANTE</div>
+                <div class="dom-label">ESTIMACIÓN BASADA EN LATENCIA</div>
                 <div class="dom-val" id="domVal">--</div>
-                <div style="font-size:0.8rem; margin-top:5px; color:#aaa;" id="domSub">...</div>
+                <div style="font-size:0.8rem; margin-top:5px; color:#aaa;" id="domSub">
+                    Calibrado para dispositivos móviles
+                </div>
             </div>
         </div>
 
         <div class="card">
-            <span class="label">Latencia Actual</span>
-            <div style="display:flex; justify-content:space-between;">
-                <div><div class="big-num" id="wanVal" style="color:var(--cyan)">0</div><div class="unit">ms (Internet)</div></div>
-                <div style="text-align:right;"><div class="big-num" id="gwVal" style="color:var(--purple)">0</div><div class="unit">ms (Local)</div></div>
+            <span class="label">Latencia (Ping)</span>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <div><div class="big-num" id="wanVal" style="color:var(--cyan)">0</div><div class="unit">ms (WAN)</div></div>
+                <div style="text-align:right;"><div class="big-num" id="gwVal" style="color:var(--purple)">0</div><div class="unit">ms (WLAN)</div></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <span class="label">SNR Estimado (Estabilidad)</span>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <div><div class="big-num" id="wanSnr" style="color:var(--cyan)">0</div><div class="unit">dB (WAN)</div></div>
+                <div style="text-align:right;"><div class="big-num" id="gwSnr" style="color:var(--purple)">0</div><div class="unit">dB (WLAN)</div></div>
             </div>
         </div>
 
         <div class="card full-width">
             <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span class="label">Monitor de Estabilidad (Comparativo)</span>
+                <span class="label">Monitor Comparativo</span>
                 <div class="legend-box">
-                    <div class="legend-item"><div class="dot" id="legendWan" style="background:var(--cyan)"></div> WAN (Dinámico)</div>
-                    <div class="legend-item"><div class="dot" style="background:var(--purple)"></div> WLAN (Local)</div>
+                    <div class="legend-item"><div class="dot" id="legendWan" style="background:var(--cyan)"></div> WAN</div>
+                    <div class="legend-item"><div class="dot" style="background:var(--purple)"></div> WLAN</div>
                 </div>
             </div>
             <div class="chart-container">
@@ -183,19 +216,19 @@
         <div class="full-width" id="densityPanel" style="display:none;">
             <div class="curve-grid">
                 <div class="mini-card" style="border-left-color:var(--green)">
-                    <div class="mini-head" style="color:var(--green)">256-QAM (0-30ms) <span id="pct1">0%</span></div>
+                    <div class="mini-head" style="color:var(--green)">256-QAM (0-60ms) <span id="pct1">0%</span></div>
                     <div class="chart-mini-container"><canvas id="chart1"></canvas></div>
                 </div>
                 <div class="mini-card" style="border-left-color:var(--cyan)">
-                    <div class="mini-head" style="color:var(--cyan)">64-QAM (30-60ms) <span id="pct2">0%</span></div>
+                    <div class="mini-head" style="color:var(--cyan)">64-QAM (60-100ms) <span id="pct2">0%</span></div>
                     <div class="chart-mini-container"><canvas id="chart2"></canvas></div>
                 </div>
                 <div class="mini-card" style="border-left-color:var(--orange)">
-                    <div class="mini-head" style="color:var(--orange)">16-QAM (60-120ms) <span id="pct3">0%</span></div>
+                    <div class="mini-head" style="color:var(--orange)">16-QAM (100-180ms) <span id="pct3">0%</span></div>
                     <div class="chart-mini-container"><canvas id="chart3"></canvas></div>
                 </div>
                 <div class="mini-card" style="border-left-color:var(--red)">
-                    <div class="mini-head" style="color:var(--red)">QPSK (>120ms) <span id="pct4">0%</span></div>
+                    <div class="mini-head" style="color:var(--red)">QPSK (>180ms) <span id="pct4">0%</span></div>
                     <div class="chart-mini-container"><canvas id="chart4"></canvas></div>
                 </div>
             </div>
@@ -212,6 +245,8 @@
         let timer;
         let sessionWan = [];
         let sessionGw = [];
+        let sessionWanSnr = [];
+        let sessionGwSnr = [];
         let currentISP = "Desconocido";
         let reportChartInstance = null;
         let reportLineInstance = null;
@@ -240,34 +275,24 @@
             document.getElementById('gatewayIp').disabled = !chk.checked;
         }
 
-        // --- 1. GRÁFICA DE LÍNEA (DOBLE) ---
         const ctxLine = document.getElementById('lineChart').getContext('2d');
         const lineChart = new Chart(ctxLine, {
             type: 'line',
             data: {
                 labels: Array(30).fill(''),
                 datasets: [
-                    {
-                        label: 'WAN (Internet)', data: Array(30).fill(null),
-                        borderColor: '#00f3ff', // Este color cambia dinámicamente
-                        borderWidth: 2, tension: 0.3, pointRadius: 0
-                    },
-                    {
-                        label: 'WLAN (Local)', data: Array(30).fill(null),
-                        borderColor: '#bf00ff', // Púrpura fijo para Gateway
-                        borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0
-                    }
+                    { label: 'WAN (Internet)', data: Array(30).fill(null), borderColor: '#00f3ff', borderWidth: 2, tension: 0.3, pointRadius: 0 },
+                    { label: 'WLAN (Local)', data: Array(30).fill(null), borderColor: '#bf00ff', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 0 }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: false }, y: { grid: { color: '#222' }, suggestedMax: 100 } }, plugins: { legend: { display: false } } }
         });
 
-        // --- 2. GRÁFICAS DE DENSIDAD (DOBLES) ---
         const RANGES = [
-            { id: 'chart1', min: 0, max: 30, color: '#00ff41', name: '256-QAM' },
-            { id: 'chart2', min: 30, max: 60, color: '#00f3ff', name: '64-QAM' },
-            { id: 'chart3', min: 60, max: 120, color: '#ffab00', name: '16-QAM' },
-            { id: 'chart4', min: 120, max: 300, color: '#ff003c', name: 'QPSK' }
+            { id: 'chart1', min: 0, max: 60, color: '#00ff41', name: '256-QAM' },
+            { id: 'chart2', min: 60, max: 100, color: '#00f3ff', name: '64-QAM' },
+            { id: 'chart3', min: 100, max: 180, color: '#ffab00', name: '16-QAM' },
+            { id: 'chart4', min: 180, max: 400, color: '#ff003c', name: 'QPSK' }
         ];
 
         const densityCharts = RANGES.map(r => {
@@ -280,19 +305,15 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        { // WAN (Filled)
-                            data: new Array(15).fill(0), borderColor: r.color, backgroundColor: r.color + '40', borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0
-                        },
-                        { // LAN (Dashed Line Only)
-                            data: new Array(15).fill(0), borderColor: '#bf00ff', borderWidth: 2, borderDash: [3,3], fill: false, tension: 0.5, pointRadius: 0
-                        }
+                        { data: new Array(15).fill(0), borderColor: r.color, backgroundColor: r.color + '40', borderWidth: 2, fill: true, tension: 0.5, pointRadius: 0 },
+                        { data: new Array(15).fill(0), borderColor: '#bf00ff', borderWidth: 2, borderDash: [3,3], fill: false, tension: 0.5, pointRadius: 0 }
                     ]
                 },
                 options: { responsive: true, maintainAspectRatio: false, animation: false, scales: { x: { display: true, ticks: {color:'#666', font:{size:8}}, grid:{display:false} }, y: { display: false } }, plugins: { legend: { display: false } } }
             });
         });
 
-        // --- PING GATEWAY (IMAGE METHOD) ---
+        // --- PING GATEWAY (IMAGE) ---
         function pingLocalGateway(ip) {
             return new Promise((resolve) => {
                 const start = performance.now();
@@ -305,18 +326,26 @@
             });
         }
 
-        // --- MATH & UPDATES ---
+        // --- CALCULADORA DE SNR ESTIMADO ---
+        function calculateSNR(ping, jitter) {
+            // Algoritmo empírico para estimar calidad de enlace
+            let baseSnr = 50; 
+            let penalty = (jitter * 2) + (ping * 0.1);
+            if (ping > 100) penalty += 10;
+            return Math.max(0, Math.min(60, baseSnr - penalty));
+        }
+
+        // --- MATH ---
         function updateDensityCurves(wanData, gwData) {
             let counts = [0, 0, 0, 0];
             let wanDensities = [new Array(15).fill(0), new Array(15).fill(0), new Array(15).fill(0), new Array(15).fill(0)];
             let gwDensities = [new Array(15).fill(0), new Array(15).fill(0), new Array(15).fill(0), new Array(15).fill(0)];
 
-            // Helper para calcular densidad
             const processData = (sourceData, densityArray, countArray) => {
                 sourceData.forEach(ping => {
                     if (ping === null) return;
                     let idx = -1;
-                    if (ping <= 30) idx = 0; else if (ping <= 60) idx = 1; else if (ping <= 120) idx = 2; else idx = 3;
+                    if (ping <= 60) idx = 0; else if (ping <= 100) idx = 1; else if (ping <= 180) idx = 2; else idx = 3;
                     
                     if (idx !== -1) {
                         if(countArray) countArray[idx]++;
@@ -333,7 +362,7 @@
             };
 
             processData(wanData, wanDensities, counts);
-            processData(gwData, gwDensities, null); // No necesitamos contar LAN para predominancia global
+            processData(gwData, gwDensities, null);
 
             densityCharts.forEach((chart, i) => {
                 chart.data.datasets[0].data = wanDensities[i]; // WAN
@@ -352,37 +381,49 @@
             const wanPing = performance.now() - start;
             sessionWan.push(wanPing);
 
+            // Jitter & SNR WAN
+            const jitterWan = sessionWan.length > 1 ? Math.abs(wanPing - sessionWan[sessionWan.length-2]) : 0;
+            const snrWan = calculateSNR(wanPing, jitterWan);
+            sessionWanSnr.push(snrWan);
+
             let gwPing = null;
+            let snrGw = 0;
             if (document.getElementById('chkGateway').checked) {
                 const ip = document.getElementById('gatewayIp').value;
                 gwPing = await pingLocalGateway(ip);
-                if(gwPing) sessionGw.push(gwPing);
+                if(gwPing) {
+                    sessionGw.push(gwPing);
+                    const jitterGw = sessionGw.length > 1 ? Math.abs(gwPing - sessionGw[sessionGw.length-2]) : 0;
+                    snrGw = calculateSNR(gwPing, jitterGw);
+                    sessionGwSnr.push(snrGw);
+                }
             }
 
-            // Update Text
+            // Update Metrics UI
             document.getElementById('wanVal').innerText = wanPing.toFixed(0);
             document.getElementById('gwVal').innerText = gwPing ? gwPing.toFixed(0) : "--";
+            
+            document.getElementById('wanSnr').innerText = snrWan.toFixed(1);
+            document.getElementById('wanSnr').style.color = snrWan > 30 ? "var(--green)" : "var(--red)";
+            
+            document.getElementById('gwSnr').innerText = snrGw > 0 ? snrGw.toFixed(1) : "--";
+            document.getElementById('gwSnr').style.color = snrGw > 35 ? "var(--purple)" : "var(--orange)";
 
-            // Update Analytics
             const counts = updateDensityCurves(sessionWan, sessionGw);
 
-            // Predominancia & Color Dinámico
             let maxIdx = 0;
             for(let i=1; i<4; i++) { if(counts[i] > counts[maxIdx]) maxIdx = i; }
             const winner = RANGES[maxIdx];
 
-            // ACTUALIZAR COLOR DE LÍNEA WAN
             lineChart.data.datasets[0].borderColor = winner.color;
             document.getElementById('legendWan').style.backgroundColor = winner.color;
 
-            // Actualizar Gráfica Línea
             lineChart.data.datasets[0].data.shift();
             lineChart.data.datasets[0].data.push(wanPing);
             lineChart.data.datasets[1].data.shift();
-            lineChart.data.datasets[1].data.push(gwPing); // Puede ser null, chartjs lo maneja (break)
+            lineChart.data.datasets[1].data.push(gwPing);
             lineChart.update();
 
-            // Dominante UI
             const confidence = ((counts[maxIdx] / (sessionWan.length || 1)) * 100).toFixed(0);
             const domEl = document.getElementById('domVal');
             const boxEl = document.getElementById('domBox');
@@ -390,16 +431,18 @@
             domEl.style.color = winner.color;
             boxEl.style.borderColor = winner.color;
             boxEl.style.boxShadow = `0 0 15px ${winner.color}20`;
-            document.getElementById('domSub').innerText = `Estabilidad del ${confidence}%`;
+            document.getElementById('domSub').innerText = `Estabilidad del ${confidence}% (Calibración Móvil)`;
         }
 
         function generateReport() {
             stopTest();
             if(sessionWan.length === 0) return;
 
+            // Promedios
             const avgWan = sessionWan.reduce((a,b)=>a+b,0)/sessionWan.length;
             const avgGw = sessionGw.length > 0 ? sessionGw.reduce((a,b)=>a+b,0)/sessionGw.length : 0;
-            const snr = 45 - (Math.abs(avgWan - (sessionWan[0]||0)) * 0.5); // Dummy SNR calc
+            const avgSnrWan = sessionWanSnr.reduce((a,b)=>a+b,0)/sessionWanSnr.length;
+            const avgSnrGw = sessionGwSnr.length > 0 ? sessionGwSnr.reduce((a,b)=>a+b,0)/sessionGwSnr.length : 0;
 
             const counts = updateDensityCurves(sessionWan, sessionGw);
             let maxIdx = 0;
@@ -408,22 +451,70 @@
 
             document.getElementById('repIspFull').innerText = currentISP;
             document.getElementById('repDate').innerText = new Date().toLocaleDateString();
-            document.getElementById('repWan').innerText = avgWan.toFixed(0) + " ms";
-            document.getElementById('repLan').innerText = avgGw > 0 ? avgGw.toFixed(0) + " ms" : "N/A";
+            
+            // Valores Reporte
+            document.getElementById('repWanPing').innerText = avgWan.toFixed(0) + " ms";
+            document.getElementById('repLanPing').innerText = avgGw > 0 ? avgGw.toFixed(0) + " ms" : "N/A";
+            document.getElementById('repWanSnr').innerText = avgSnrWan.toFixed(1) + " dB";
+            document.getElementById('repLanSnr').innerText = avgGw > 0 ? avgSnrGw.toFixed(1) + " dB" : "N/A";
             
             document.getElementById('repDomVal').innerText = winner.name;
             document.getElementById('repDomVal').style.color = winner.color;
 
+            // --- GENERADOR DE DICTAMEN Y RECOMENDACIONES ---
             let conc = "";
+            let recommendations = [];
             let diff = avgGw > 0 ? (avgWan - avgGw) : 0;
             
-            if (avgGw > 50) conc = "PROBLEMA LOCAL. La latencia WLAN es excesiva. Revise su router.";
-            else if (diff > 100) conc = "PROBLEMA ISP. Red local sana, pero salida a internet lenta.";
-            else if (winner.name === '256-QAM') conc = "RED CERTIFICADA. Rendimiento óptimo en ambos tramos.";
-            else conc = "RENDIMIENTO ESTÁNDAR.";
-            
-            document.getElementById('repConclusion').innerText = conc;
+            // 1. Análisis Local
+            if (avgGw > 60) {
+                conc += "<strong>PROBLEMA CRÍTICO EN WLAN.</strong> La latencia interna al Gateway es excesiva. Esto indica interferencia severa en el canal Wi-Fi o saturación del router. ";
+                recommendations.push("Cambiar el canal Wi-Fi (1, 6 u 11 en 2.4GHz).");
+                recommendations.push("Acercarse al Router o usar banda de 5GHz.");
+                recommendations.push("Reiniciar el Router para liberar memoria.");
+            } else if (avgGw > 20) {
+                conc += "<strong>DEGRADACIÓN LEVE WLAN.</strong> La red local introduce un retardo perceptible pero funcional. ";
+                recommendations.push("Verificar si hay descargas en segundo plano en la red local.");
+            } else if (avgGw > 0) {
+                conc += "<strong>RED LOCAL (WLAN) ÓPTIMA.</strong> El enlace al router es sólido. ";
+            } else {
+                conc += "<strong>WLAN NO ANALIZADA.</strong> No se pudo auditar el tramo local. ";
+                recommendations.push("Habilitar 'Comparar WLAN' e ingresar IP del Gateway para un diagnóstico completo.");
+            }
+
+            // 2. Análisis WAN
+            if (diff > 120) {
+                conc += "<br><br><strong>FALLO DEL PROVEEDOR (ISP).</strong> A pesar de tener una red local funcional, la salida a Internet presenta alta latencia. El problema reside en la infraestructura externa. ";
+                recommendations.push("Contactar a soporte técnico del ISP y reportar latencia alta.");
+                recommendations.push("Verificar el estado del cableado de acometida (fibra/coaxial).");
+            } else if (avgSnrWan < 20) {
+                conc += "<br><br><strong>INESTABILIDAD WAN (RUIDO).</strong> El SNR bajo indica fluctuaciones (Jitter) altas en la conexión a internet. ";
+                recommendations.push("Revisar conexiones físicas sulfatadas o dañadas.");
+            }
+
+            // 3. Conclusión Modulación
+            if (winner.name === '256-QAM') conc += "<br><br><strong>CLASIFICACIÓN: EXCELENTE.</strong> Rendimiento general de alto nivel.";
+            else if (winner.name === 'QPSK') {
+                conc += "<br><br><strong>CLASIFICACIÓN: CRÍTICA.</strong> La conexión es inoperable para tiempo real.";
+                recommendations.push("Si usa datos móviles, busque una zona con mejor cobertura.");
+            }
+
+            document.getElementById('repConclusion').innerHTML = conc;
             document.getElementById('repConclusion').style.borderLeftColor = winner.color;
+
+            // Renderizar Recomendaciones
+            const recList = document.getElementById('recList');
+            recList.innerHTML = "";
+            if (recommendations.length === 0) {
+                recList.innerHTML = "<li style='color:var(--green)'>No se requieren acciones correctivas. Sistema óptimo.</li>";
+            } else {
+                recommendations.forEach(rec => {
+                    const li = document.createElement('li');
+                    li.innerText = rec;
+                    li.style.marginBottom = "5px";
+                    recList.appendChild(li);
+                });
+            }
 
             // Clones para Reporte
             if(reportLineInstance) reportLineInstance.destroy();
@@ -449,13 +540,13 @@
         function downloadPDF() {
             const el = document.getElementById('printableArea');
             el.classList.add('print-mode');
-            const opt = { margin: 5, filename: `NetScope_v32.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+            const opt = { margin: 5, filename: `NetScope_v33.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
             html2pdf().set(opt).from(el).save().then(() => el.classList.remove('print-mode'));
         }
 
         function startTest() {
             if(running) return;
-            running = true; sessionWan = []; sessionGw = [];
+            running = true; sessionWan = []; sessionGw = []; sessionWanSnr = []; sessionGwSnr = [];
             timer = setInterval(loop, 1000);
             document.getElementById('btnStart').disabled = true; document.getElementById('btnReport').disabled = false;
         }
@@ -464,6 +555,7 @@
     </script>
 </body>
 </html>
+
 
 
 
